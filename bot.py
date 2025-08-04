@@ -1,4 +1,4 @@
-import discord
+""import discord
 from discord.ext import commands, tasks
 from discord import app_commands
 import asyncio
@@ -6,6 +6,7 @@ import random
 import os
 from datetime import datetime, timezone
 from flask import Flask
+import threading
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -60,7 +61,7 @@ class DutyView(discord.ui.View):
 
 class ReminderView(discord.ui.View):
     def __init__(self, user):
-        super().__init__(timeout=10)
+        super().__init__(timeout=120)
         self.user = user
         self.responded = False
 
@@ -92,7 +93,7 @@ class ReminderView(discord.ui.View):
         await send_log("Duty Ended via Reminder", "User ended duty from reminder.", self.user, color=discord.Color.red())
 
 async def schedule_reminder(user):
-    delay = random.randint(10, 30)  # 20-30 minutes
+    delay = random.randint(1200, 1800)  # 20-30 minutes
     await asyncio.sleep(delay)
 
     if user.id not in duty_data or not duty_data[user.id]["active"]:
@@ -112,6 +113,12 @@ async def schedule_reminder(user):
     view = ReminderView(user)
     try:
         message = await user.send(embed=embed, view=view)
+        await send_log(
+            f"Reminder Sent (#{reminder_number})",
+            f"A reminder was sent to the user. They've been on duty for {str(duty_duration).split('.')[0]}",
+            user,
+            color=discord.Color.orange()
+        )
     except discord.Forbidden:
         return
 
@@ -240,13 +247,8 @@ async def on_ready():
         await channel.send(embed=embed, view=DutyView())
 
 if __name__ == "__main__":
-    import threading
-
     def run_flask():
         app.run(host="0.0.0.0", port=8080)
 
     threading.Thread(target=run_flask).start()
-
     bot.run(os.getenv("DISCORD_TOKEN"))
-
-
