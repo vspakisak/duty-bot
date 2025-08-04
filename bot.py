@@ -14,9 +14,9 @@ intents.members = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-DUTY_CHANNEL_ID = 1386555864386764877  # replace with your duty channel ID
-LOG_CHANNEL_ID = 1386555864831365191  # replace with your log channel ID
-ADMIN_USER_ID = 848805899790581780    # replace with your own user ID
+DUTY_CHANNEL_ID = 1401512520480591902  # replace with your duty channel ID
+LOG_CHANNEL_ID = 1399171018630889472# replace with your log channel ID
+ADMIN_USER_ID = 1188607553526050848   # replace with your own user ID
 
 app = Flask(__name__)
 
@@ -61,7 +61,7 @@ class DutyView(discord.ui.View):
 
 class ReminderView(discord.ui.View):
     def __init__(self, user):
-        super().__init__(timeout=10)
+        super().__init__(timeout=120)
         self.user = user
         self.responded = False
 
@@ -93,7 +93,7 @@ class ReminderView(discord.ui.View):
         await send_log("Duty Ended via Reminder", "User ended duty from reminder.", self.user, color=discord.Color.red())
 
 async def schedule_reminder(user):
-    delay = random.randint(10, 15)  # 20-30 minutes
+    delay = random.randint(1200, 1800)  # 20-30 minutes
     await asyncio.sleep(delay)
 
     if user.id not in duty_data or not duty_data[user.id]["active"]:
@@ -252,3 +252,4 @@ if __name__ == "__main__":
 
     threading.Thread(target=run_flask).start()
     bot.run(os.getenv("DISCORD_TOKEN"))
+
