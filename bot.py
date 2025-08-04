@@ -3,10 +3,9 @@ from discord.ext import commands, tasks
 from discord import app_commands
 import asyncio
 import random
-from datetime import datetime
-from flask import Flask
-import threading
 import os
+from datetime import datetime, timezone
+from flask import Flask
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -15,10 +14,14 @@ intents.members = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 DUTY_CHANNEL_ID = 1386555864386764877  # replace with your duty channel ID
-LOG_CHANNEL_ID = 1386555864831365191   # replace with your log channel ID
+LOG_CHANNEL_ID = 1386555864831365191  # replace with your log channel ID
 ADMIN_USER_ID = 848805899790581780    # replace with your own user ID
 
-TOKEN = os.environ.get("DISCORD_TOKEN")  # Set this environment variable on Render
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "Bot is running!"
 
 duty_data = {}
 points_data = {}
@@ -35,7 +38,7 @@ class DutyView(discord.ui.View):
             return
 
         duty_data[user.id] = {
-            "start_time": datetime.utcnow(),
+            "start_time": datetime.now(timezone.utc),
             "reminder_count": 0,
             "active": True
         }
@@ -57,7 +60,7 @@ class DutyView(discord.ui.View):
 
 class ReminderView(discord.ui.View):
     def __init__(self, user):
-        super().__init__(timeout=120)  # 2-minute timeout
+        super().__init__(timeout=120)
         self.user = user
         self.responded = False
 
@@ -98,23 +101,17 @@ async def schedule_reminder(user):
     duty_data[user.id]["reminder_count"] += 1
     reminder_number = duty_data[user.id]["reminder_count"]
     start_time = duty_data[user.id]["start_time"]
-    duty_duration = datetime.utcnow() - start_time
+    duty_duration = datetime.now(timezone.utc) - start_time
 
     embed = discord.Embed(
         title=f"Reminder #{reminder_number}",
-        description=f"You are currently on duty for {str(duty_duration).split('.')[0]}.",
+        description=f"You are currently on duty for {str(duty_duration).split('.')[0]}",
         color=discord.Color.orange()
     )
 
     view = ReminderView(user)
     try:
         message = await user.send(embed=embed, view=view)
-        await send_log(
-            f"Reminder Sent",
-            f"Reminder #{reminder_number} sent to user.\nTime on duty so far: `{str(duty_duration).split('.')[0]}`",
-            user,
-            color=discord.Color.orange()
-        )
     except discord.Forbidden:
         return
 
@@ -137,7 +134,7 @@ async def schedule_reminder(user):
 async def end_duty(user: discord.User, reason: str):
     data = duty_data.pop(user.id, None)
     if data:
-        duration = (datetime.utcnow() - data["start_time"]).total_seconds()
+        duration = (datetime.now(timezone.utc) - data["start_time"]).total_seconds()
         points_earned = int(duration // 240)
 
         if points_earned > 0:
@@ -172,7 +169,7 @@ async def send_log(title: str, description: str, user: discord.User, color=disco
 
     embed = discord.Embed(title=title, description=description, color=color)
     embed.set_author(name=f"{user} ({user.id})", icon_url=user.avatar.url if user.avatar else None)
-    embed.timestamp = datetime.utcnow()
+    embed.timestamp = datetime.now(timezone.utc)
     await channel.send(embed=embed)
 
 @bot.tree.command(name="total", description="View total points of a user (Admin only)")
@@ -242,20 +239,5 @@ async def on_ready():
         )
         await channel.send(embed=embed, view=DutyView())
 
-# Flask server to keep alive for Render + UptimeRobot
-app = Flask('')
-
-@app.route('/')
-def home():
-    return "Bot is running!"
-
-def run():
-    app.run(host='0.0.0.0', port=8080)
-
-def keep_alive():
-    thread = threading.Thread(target=run)
-    thread.start()
-
-keep_alive()
-
-bot.run(TOKEN)
+if __name__ == "__main__":
+    bot.run(os.getenv("DISCORD_TOKEN"))
