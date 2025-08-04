@@ -60,7 +60,7 @@ class DutyView(discord.ui.View):
 
 class ReminderView(discord.ui.View):
     def __init__(self, user):
-        super().__init__(timeout=120)
+        super().__init__(timeout=10)
         self.user = user
         self.responded = False
 
@@ -92,7 +92,7 @@ class ReminderView(discord.ui.View):
         await send_log("Duty Ended via Reminder", "User ended duty from reminder.", self.user, color=discord.Color.red())
 
 async def schedule_reminder(user):
-    delay = random.randint(1200, 1800)  # 20-30 minutes
+    delay = random.randint(10, 30)  # 20-30 minutes
     await asyncio.sleep(delay)
 
     if user.id not in duty_data or not duty_data[user.id]["active"]:
@@ -248,4 +248,5 @@ if __name__ == "__main__":
     threading.Thread(target=run_flask).start()
 
     bot.run(os.getenv("DISCORD_TOKEN"))
+
 
