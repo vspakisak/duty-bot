@@ -1,4 +1,4 @@
-""import discord
+import discord
 from discord.ext import commands, tasks
 from discord import app_commands
 import asyncio
@@ -252,4 +252,3 @@ if __name__ == "__main__":
 
     threading.Thread(target=run_flask).start()
     bot.run(os.getenv("DISCORD_TOKEN"))
-
