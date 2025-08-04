@@ -240,4 +240,12 @@ async def on_ready():
         await channel.send(embed=embed, view=DutyView())
 
 if __name__ == "__main__":
+    import threading
+
+    def run_flask():
+        app.run(host="0.0.0.0", port=8080)
+
+    threading.Thread(target=run_flask).start()
+
     bot.run(os.getenv("DISCORD_TOKEN"))
+
